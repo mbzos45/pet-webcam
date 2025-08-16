@@ -1,0 +1,20 @@
+[package]
+name = "pet-webcam"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.99"
+argh = "0.1.13"
+chrono = "0.4.41"
+image = { version = "0.25.6", default-features = false, features = ["rayon"]}
+ndarray = "0.16.1"
+nokhwa = { version = "0.10.9", features = ["input-native"] }
+num-derive = "0.4.2"
+num-traits = "0.2.19"
+ort = "=2.0.0-rc.10"
+strum = { version = "0.27.2", features = ["derive"] }
+strum_macros = "0.27.2"
+tracing = "0.1.41"
+tracing-subscriber = "0.3.19"
+webp = "0.3.0"
