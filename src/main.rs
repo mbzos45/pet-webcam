@@ -37,6 +37,10 @@ struct Args {
     /// image size width
     #[argh(option, short = 'w')]
     width: Option<u32>,
+    /// image compression quality (0-100)
+    #[argh(option, short = 'q', default = "80")]
+    quality: u8,
+
     /// image size height
     #[argh(option, short = 'h')]
     height: Option<u32>,
@@ -176,7 +180,7 @@ fn main() -> Result<()> {
 
     let snapped_img = capture_image(args.camera_id)?;
     let timestamp = Local::now().format(&args.time_format);
-    let detected_objs = detect_yolov8(&snapped_img, args.onnx_path)?;
+    let detected_objs = detect_yolov8(&snapped_img, &args.onnx_path)?;
     if detected_objs.is_empty() {
         tracing::info!("No objects detected");
     } else {
@@ -206,7 +210,7 @@ fn main() -> Result<()> {
     let Ok(encoder) = webp::Encoder::from_image(&save_img_buf) else {
         bail!("Failed to create webp encoder from image");
     };
-    let webp = encoder.encode(90f32);
+    let webp = encoder.encode(args.quality as f32);
     let img_path = save_dir.join(timestamp.to_string()).with_extension("webp");
     std::fs::write(&img_path, &*webp)?;
     tracing::info!("Saved image to {}", img_path.display());
@@ -234,6 +238,9 @@ fn capture_image(camera_id: usize) -> Result<DynamicImage> {
         RequestedFormat::new::<RgbFormat>(RequestedFormatType::AbsoluteHighestResolution);
     let mut camera = Camera::with_backend(cam_info.index().clone(), req_format, backend)?;
     camera.open_stream()?;
+    for _ in 0..5 {
+        camera.frame()?;
+    }
     let frame = camera.frame()?;
     camera.stop_stream()?;
     let img_buf = frame.decode_image::<RgbFormat>()?;
