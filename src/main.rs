@@ -223,8 +223,8 @@ fn capture_image(camera_id: usize) -> Result<DynamicImage> {
     let cam_info = {
         let mut devices = query(backend)?;
         devices.sort_by(|a, b| {
-            let idx_a = a.index().as_index().unwrap();
-            let idx_b = b.index().as_index().unwrap();
+            let idx_a = a.index().as_index().expect("Camera index is not usize");
+            let idx_b = b.index().as_index().expect("Camera index is not usize");
             idx_a.cmp(&idx_b)
         });
         ensure!(
@@ -249,20 +249,26 @@ fn capture_image(camera_id: usize) -> Result<DynamicImage> {
     Ok(dyn_img)
 }
 
-fn detect_yolov8<P: AsRef<std::path::Path>>(
-    original_img: &DynamicImage,
-    onnx_path: P,
-) -> Result<Vec<DetectedItem>> {
+fn detect_yolov8<P>(original_img: &DynamicImage, onnx_path: P) -> Result<Vec<DetectedItem>>
+where
+    P: AsRef<std::path::Path>,
+{
+    const INPUT_WIDTH: u32 = 640;
+    const INPUT_HEIGHT: u32 = 640;
+    const NORMALIZATION_FACTOR: f32 = 255.0;
     let (img_width, img_height) = (original_img.width(), original_img.height());
-    let img = original_img.resize_exact(640, 640, FilterType::CatmullRom);
-    let mut input = Array::zeros((1, 3, 640, 640));
-    for pixel in img.pixels() {
-        let x = pixel.0 as _;
-        let y = pixel.1 as _;
-        let [r, g, b, _] = pixel.2.0;
-        input[[0, 0, y, x]] = (r as f32) / 255.;
-        input[[0, 1, y, x]] = (g as f32) / 255.;
-        input[[0, 2, y, x]] = (b as f32) / 255.;
+    let mut input = Array::zeros((1, 3, INPUT_HEIGHT as usize, INPUT_WIDTH as usize));
+    {
+        let input_img =
+            original_img.resize_exact(INPUT_WIDTH, INPUT_HEIGHT, FilterType::CatmullRom);
+        for pixel in input_img.pixels() {
+            let x = pixel.0 as _;
+            let y = pixel.1 as _;
+            let [r, g, b, _] = pixel.2.0;
+            input[[0, 0, y, x]] = (r as f32) / NORMALIZATION_FACTOR;
+            input[[0, 1, y, x]] = (g as f32) / NORMALIZATION_FACTOR;
+            input[[0, 2, y, x]] = (b as f32) / NORMALIZATION_FACTOR;
+        }
     }
     let mut model = Session::builder()?
         .with_log_level(LogLevel::Fatal)?
@@ -293,10 +299,10 @@ fn detect_yolov8<P: AsRef<std::path::Path>>(
             continue;
         };
         let label = class_enum;
-        let xc = row[0] / 640. * (img_width as f32);
-        let yc = row[1] / 640. * (img_height as f32);
-        let w = row[2] / 640. * (img_width as f32);
-        let h = row[3] / 640. * (img_height as f32);
+        let xc = row[0] / INPUT_WIDTH as f32 * (img_width as f32);
+        let yc = row[1] / INPUT_HEIGHT as f32 * (img_height as f32);
+        let w = row[2] / INPUT_WIDTH as f32 * (img_width as f32);
+        let h = row[3] / INPUT_HEIGHT as f32 * (img_height as f32);
         let bounding_box = BoundingBox {
             x1: xc - w / 2.,
             y1: yc - h / 2.,
@@ -312,7 +318,6 @@ fn detect_yolov8<P: AsRef<std::path::Path>>(
     }
     boxes.sort_by(|box1, box2| box2.probability.total_cmp(&box1.probability));
     let mut result = Vec::new();
-
     while !boxes.is_empty() {
         result.push(boxes[0]);
         boxes = boxes
