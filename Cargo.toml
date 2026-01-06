@@ -8,7 +8,7 @@ anyhow = "1.0.100"
 argh = "0.1.13"
 chrono = "0.4.42"
 image = { version = "0.25.9", default-features = false, features = ["rayon"]}
-ndarray = "0.17.1"
+ndarray = "0.16.1"
 nokhwa = { version = "0.10.10", features = ["input-native"] }
 num-derive = "0.4.2"
 num-traits = "0.2.19"
