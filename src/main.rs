@@ -222,6 +222,9 @@ fn capture_image(camera_id: usize) -> Result<DynamicImage> {
     let backend = native_api_backend().context("Failed to get native API backend")?;
     let cam_info = {
         let mut devices = query(backend)?;
+        if devices.is_empty() {
+            bail!("No camera devices found");
+        }
         devices.sort_by(|a, b| {
             let idx_a = a.index().as_index().expect("Camera index is not usize");
             let idx_b = b.index().as_index().expect("Camera index is not usize");
