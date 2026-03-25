@@ -62,7 +62,7 @@ fn main() -> Result<()> {
     let args: Args = argh::from_env();
     if let Some(onnx_path) = &args.onnx_path {
         if !onnx_path.exists() || !onnx_path.is_file() {
-            bail!("yolov8 onnx file does not exist: {}", onnx_path.display());
+            bail!("yolo onnx file does not exist: {}", onnx_path.display());
         }
     }
     let save_dir = PathBuf::from(&args.img_path);
