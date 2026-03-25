@@ -1,23 +1,14 @@
-use anyhow::{Context, Result, bail, ensure};
+use anyhow::{Result, bail};
 use argh::FromArgs;
 use chrono::prelude::*;
-use image::{DynamicImage, GenericImageView, imageops::FilterType};
-use ndarray::{Array, Axis, s};
-use nokhwa::{
-    Camera, native_api_backend, nokhwa_initialize,
-    pixel_format::RgbFormat,
-    query,
-    utils::{RequestedFormat, RequestedFormatType},
-};
-use num_traits::FromPrimitive;
-use ort::{
-    inputs,
-    logging::LogLevel,
-    session::{Session, SessionOutputs},
-    value::TensorRef,
-};
-use std::{cmp::PartialEq, collections::HashMap, path::PathBuf};
-use strum_macros::{AsRefStr, EnumIs, EnumString};
+use std::{collections::HashMap, path::PathBuf};
+
+use camera::capture_image;
+use detector::{YoloV8Class, detect_yolov8};
+
+mod camera;
+mod detector;
+mod storage;
 
 #[macro_use]
 extern crate num_derive;
@@ -49,101 +40,6 @@ struct Args {
     img_path: String,
 }
 
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    Eq,
-    Hash,
-    PartialEq,
-    FromPrimitive,
-    ToPrimitive,
-    EnumString,
-    AsRefStr,
-    EnumIs,
-)]
-enum YoloV8Class {
-    Person,
-    Bicycle,
-    Car,
-    Motorcycle,
-    Airplane,
-    Bus,
-    Train,
-    Truck,
-    Boat,
-    TrafficLight,
-    FireHydrant,
-    StopSign,
-    ParkingMeter,
-    Bench,
-    Bird,
-    Cat,
-    Dog,
-    Horse,
-    Sheep,
-    Cow,
-    Elephant,
-    Bear,
-    Zebra,
-    Giraffe,
-    Backpack,
-    Umbrella,
-    Handbag,
-    Tie,
-    Suitcase,
-    Frisbee,
-    Skis,
-    Snowboard,
-    SportsBall,
-    Kite,
-    BaseballBat,
-    BaseballGlove,
-    Skateboard,
-    Surfboard,
-    TennisRacket,
-    Bottle,
-    WineGlass,
-    Cup,
-    Fork,
-    Knife,
-    Spoon,
-    Bowl,
-    Banana,
-    Apple,
-    Sandwich,
-    Orange,
-    Broccoli,
-    Carrot,
-    HotDog,
-    Pizza,
-    Donut,
-    Cake,
-    Chair,
-    Couch,
-    PottedPlant,
-    Bed,
-    DiningTable,
-    Toilet,
-    Tv,
-    Laptop,
-    Mouse,
-    Remote,
-    Keyboard,
-    CellPhone,
-    Microwave,
-    Oven,
-    Toaster,
-    Sink,
-    Refrigerator,
-    Book,
-    Clock,
-    Vase,
-    Scissors,
-    TeddyBear,
-    HairDrier,
-    Toothbrush,
-}
 
 #[derive(Debug, Clone, Copy)]
 struct BoundingBox {
@@ -199,148 +95,13 @@ fn main() -> Result<()> {
             return Ok(());
         }
     }
-    // Resize image if width or height is specified
-    let save_img_buf = match (args.width, args.height) {
-        (Some(w), Some(h)) if w > 0 && h > 0 => {
-            tracing::info!("Resizing image to {}x{}", w, h);
-            snapped_img.resize_exact(w, h, FilterType::CatmullRom)
-        }
-        _ => snapped_img,
-    };
-    let Ok(encoder) = webp::Encoder::from_image(&save_img_buf) else {
-        bail!("Failed to create webp encoder from image");
-    };
-    let webp = encoder.encode(args.quality as f32);
-    let img_path = save_dir.join(timestamp.to_string()).with_extension("webp");
-    std::fs::write(&img_path, &*webp)?;
-    tracing::info!("Saved image to {}", img_path.display());
+    storage::save_image(
+        snapped_img,
+        &save_dir,
+        timestamp.to_string(),
+        args.width,
+        args.height,
+        args.quality,
+    )?;
     Ok(())
-}
-
-fn capture_image(camera_id: usize) -> Result<DynamicImage> {
-    nokhwa_initialize(|_| {});
-    let backend = native_api_backend().context("Failed to get native API backend")?;
-    let cam_info = {
-        let mut devices = query(backend)?;
-        if devices.is_empty() {
-            bail!("No camera devices found");
-        }
-        devices.sort_by(|a, b| {
-            let idx_a = a.index().as_index().expect("Camera index is not usize");
-            let idx_b = b.index().as_index().expect("Camera index is not usize");
-            idx_a.cmp(&idx_b)
-        });
-        ensure!(
-            camera_id < devices.len(),
-            "There are {} available devices",
-            devices.len()
-        );
-        devices.swap_remove(camera_id)
-    };
-    let req_format =
-        RequestedFormat::new::<RgbFormat>(RequestedFormatType::AbsoluteHighestResolution);
-    let mut camera = Camera::with_backend(cam_info.index().clone(), req_format, backend)?;
-    camera.open_stream()?;
-    for _ in 0..5 {
-        camera.frame()?;
-    }
-    let frame = camera.frame()?;
-    camera.stop_stream()?;
-    let img_buf = frame.decode_image::<RgbFormat>()?;
-    let dyn_img = DynamicImage::ImageRgb8(img_buf);
-    tracing::info!("Captured image from {}", camera.info().human_name());
-    Ok(dyn_img)
-}
-
-fn detect_yolov8<P>(original_img: &DynamicImage, onnx_path: P) -> Result<Vec<DetectedItem>>
-where
-    P: AsRef<std::path::Path>,
-{
-    const INPUT_WIDTH: u32 = 640;
-    const INPUT_HEIGHT: u32 = 640;
-    const NORMALIZATION_FACTOR: f32 = 255.0;
-    let (img_width, img_height) = (original_img.width(), original_img.height());
-    let mut input = Array::zeros((1, 3, INPUT_HEIGHT as usize, INPUT_WIDTH as usize));
-    {
-        let input_img =
-            original_img.resize_exact(INPUT_WIDTH, INPUT_HEIGHT, FilterType::CatmullRom);
-        for pixel in input_img.pixels() {
-            let x = pixel.0 as _;
-            let y = pixel.1 as _;
-            let [r, g, b, _] = pixel.2.0;
-            input[[0, 0, y, x]] = (r as f32) / NORMALIZATION_FACTOR;
-            input[[0, 1, y, x]] = (g as f32) / NORMALIZATION_FACTOR;
-            input[[0, 2, y, x]] = (b as f32) / NORMALIZATION_FACTOR;
-        }
-    }
-    let mut model = Session::builder()?
-        .with_log_level(LogLevel::Fatal)?
-        .commit_from_file(onnx_path)?;
-    let outputs: SessionOutputs =
-        model.run(inputs!["images" => TensorRef::from_array_view(&input)?])?;
-    let output = outputs["output0"]
-        .try_extract_array::<f32>()?
-        .t()
-        .into_owned();
-    let mut boxes = Vec::new();
-    let output = output.slice(s![.., .., 0]);
-    for row in output.axis_iter(Axis(0)) {
-        let row: Vec<_> = row.iter().copied().collect();
-        let (class_id, prob) = row
-            .iter()
-            // skip bounding box coordinates
-            .skip(4)
-            .enumerate()
-            .map(|(index, value)| (index, *value))
-            .reduce(|accum, row| if row.1 > accum.1 { row } else { accum })
-            .context("Failed to find class with maximum probability")?;
-        if prob < 0.5 {
-            continue;
-        }
-        let Some(class_enum) = YoloV8Class::from_usize(class_id) else {
-            tracing::debug!("Class ID {} is not a valid YoloV8 class", class_id);
-            continue;
-        };
-        let label = class_enum;
-        let xc = row[0] / INPUT_WIDTH as f32 * (img_width as f32);
-        let yc = row[1] / INPUT_HEIGHT as f32 * (img_height as f32);
-        let w = row[2] / INPUT_WIDTH as f32 * (img_width as f32);
-        let h = row[3] / INPUT_HEIGHT as f32 * (img_height as f32);
-        let bounding_box = BoundingBox {
-            x1: xc - w / 2.,
-            y1: yc - h / 2.,
-            x2: xc + w / 2.,
-            y2: yc + h / 2.,
-        };
-        let detected_item = DetectedItem {
-            bounding_box,
-            class: label,
-            probability: prob,
-        };
-        boxes.push(detected_item);
-    }
-    boxes.sort_by(|box1, box2| box2.probability.total_cmp(&box1.probability));
-    let mut result = Vec::new();
-    while !boxes.is_empty() {
-        result.push(boxes[0]);
-        boxes = boxes
-            .iter()
-            .filter(|box1| {
-                intersection(&boxes[0].bounding_box, &box1.bounding_box)
-                    / union(&boxes[0].bounding_box, &box1.bounding_box)
-                    < 0.7
-            })
-            .copied()
-            .collect();
-    }
-    Ok(result)
-}
-
-fn intersection(box1: &BoundingBox, box2: &BoundingBox) -> f32 {
-    (box1.x2.min(box2.x2) - box1.x1.max(box2.x1)) * (box1.y2.min(box2.y2) - box1.y1.max(box2.y1))
-}
-
-fn union(box1: &BoundingBox, box2: &BoundingBox) -> f32 {
-    ((box1.x2 - box1.x1) * (box1.y2 - box1.y1)) + ((box2.x2 - box2.x1) * (box2.y2 - box2.y1))
-        - intersection(box1, box2)
 }
