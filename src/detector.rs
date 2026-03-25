@@ -37,6 +37,9 @@ macro_rules! build_execution_providers {
         #[cfg(feature = "ep-acl")]
         execution_providers.push(ort::ep::ACLExecutionProvider::default().build());
 
+        #[cfg(feature = "ep-xnnpack")]
+        execution_providers.push(ort::ep::XNNPACKExecutionProvider::default().build());
+
         execution_providers
     }};
 }
