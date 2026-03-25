@@ -19,7 +19,7 @@ struct Args {
     /// camera id
     #[argh(option, short = 'i', default = "0")]
     camera_id: usize,
-    /// yolov8 onnx path
+    /// yolo onnx path
     #[argh(option, short = 'm')]
     onnx_path: Option<PathBuf>,
     /// timeformat for saving image
@@ -104,7 +104,7 @@ fn main() -> Result<()> {
         timestamp.to_string(),
         args.width,
         args.height,
-        args.quality,
+        args.quality as f32,
     )?;
     Ok(())
 }
