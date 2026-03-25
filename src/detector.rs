@@ -8,6 +8,7 @@ use ort::{
     session::{Session, SessionOutputs},
     value::TensorRef,
 };
+use ort::session::builder::AutoDevicePolicy;
 use strum_macros::{AsRefStr, EnumIs, EnumString};
 
 use crate::{BoundingBox, DetectedItem};
@@ -25,7 +26,7 @@ use crate::{BoundingBox, DetectedItem};
     AsRefStr,
     EnumIs,
 )]
-pub(crate) enum YoloV8Class {
+pub(crate) enum YoloClass {
     Person,
     Bicycle,
     Car,
@@ -108,7 +109,7 @@ pub(crate) enum YoloV8Class {
     Toothbrush,
 }
 
-pub(crate) fn detect_yolov8<P>(original_img: &DynamicImage, onnx_path: P) -> Result<Vec<DetectedItem>>
+pub(crate) fn detect_yolo<P>(original_img: &DynamicImage, onnx_path: P) -> Result<Vec<DetectedItem>>
 where
     P: AsRef<std::path::Path>,
 {
@@ -130,7 +131,10 @@ where
         }
     }
     let mut model = Session::builder()?
-        .with_log_level(LogLevel::Fatal)?
+        .with_log_level(LogLevel::Fatal)
+        .unwrap_or_else(|e| e.recover())
+        .with_auto_device(AutoDevicePolicy::MaxPerformance)
+        .unwrap_or_else(|e| e.recover())
         .commit_from_file(onnx_path)?;
     let outputs: SessionOutputs =
         model.run(inputs!["images" => TensorRef::from_array_view(&input)?])?;
@@ -153,7 +157,7 @@ where
         if prob < 0.5 {
             continue;
         }
-        let Some(class_enum) = YoloV8Class::from_usize(class_id) else {
+        let Some(class_enum) = YoloClass::from_usize(class_id) else {
             tracing::debug!("Class ID {} is not a valid YoloV8 class", class_id);
             continue;
         };

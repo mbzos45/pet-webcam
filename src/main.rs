@@ -4,7 +4,7 @@ use chrono::prelude::*;
 use std::{collections::HashMap, path::PathBuf};
 
 use camera::capture_image;
-use detector::{YoloV8Class, detect_yolov8};
+use detector::{YoloClass, detect_yolo};
 
 mod camera;
 mod detector;
@@ -21,7 +21,7 @@ struct Args {
     camera_id: usize,
     /// yolov8 onnx path
     #[argh(option, short = 'm')]
-    onnx_path: PathBuf,
+    onnx_path: Option<PathBuf>,
     /// timeformat for saving image
     #[argh(option, short = 't', default = "String::from(\"%Y-%m-%d_%H-%M\")")]
     time_format: String,
@@ -52,7 +52,7 @@ struct BoundingBox {
 #[derive(Debug, Clone, Copy)]
 struct DetectedItem {
     bounding_box: BoundingBox,
-    class: YoloV8Class,
+    class: YoloClass,
     probability: f32,
 }
 
@@ -60,11 +60,10 @@ fn main() -> Result<()> {
     tracing_subscriber::fmt().without_time().init();
     // Parse command line arguments
     let args: Args = argh::from_env();
-    if !args.onnx_path.exists() || !args.onnx_path.is_file() {
-        bail!(
-            "yolov8 onnx file does not exist: {}",
-            args.onnx_path.display()
-        );
+    if let Some(onnx_path) = &args.onnx_path {
+        if !onnx_path.exists() || !onnx_path.is_file() {
+            bail!("yolov8 onnx file does not exist: {}", onnx_path.display());
+        }
     }
     let save_dir = PathBuf::from(&args.img_path);
     if !save_dir.exists() || !save_dir.is_dir() {
@@ -76,24 +75,28 @@ fn main() -> Result<()> {
 
     let snapped_img = capture_image(args.camera_id)?;
     let timestamp = Local::now().format(&args.time_format);
-    let detected_objs = detect_yolov8(&snapped_img, &args.onnx_path)?;
-    if detected_objs.is_empty() {
-        tracing::info!("No objects detected");
+    if let Some(onnx_path) = &args.onnx_path {
+        let detected_objs = detect_yolo(&snapped_img, onnx_path)?;
+        if detected_objs.is_empty() {
+            tracing::info!("No objects detected");
+        } else {
+            let mut objs_map: HashMap<YoloClass, usize> = HashMap::new();
+            detected_objs.iter().for_each(|objs| {
+                *objs_map.entry(objs.class).or_insert(0) += 1;
+            });
+            let mut detected_text = String::new();
+            for (class, count) in &objs_map {
+                let add_text = format!(" {}: {}", class.as_ref(), count);
+                detected_text.push_str(&add_text);
+            }
+            tracing::info!("Detected objects: {}", detected_text);
+            if objs_map.contains_key(&YoloClass::Person) {
+                tracing::info!("Person detected, not saving image");
+                return Ok(());
+            }
+        }
     } else {
-        let mut objs_map: HashMap<YoloV8Class, usize> = HashMap::new();
-        detected_objs.iter().for_each(|objs| {
-            *objs_map.entry(objs.class).or_insert(0) += 1;
-        });
-        let mut detected_text = String::new();
-        for (class, count) in &objs_map {
-            let add_text = format!(" {}: {}", class.as_ref(), count);
-            detected_text.push_str(&add_text);
-        }
-        tracing::info!("Detected objects: {}", detected_text);
-        if objs_map.contains_key(&YoloV8Class::Person) {
-            tracing::info!("Person detected, not saving image");
-            return Ok(());
-        }
+        tracing::info!("onnx_path is not specified; skipping inference");
     }
     storage::save_image(
         snapped_img,
