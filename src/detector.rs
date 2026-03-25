@@ -3,6 +3,7 @@ use image::{DynamicImage, GenericImageView, imageops::FilterType};
 use ndarray::{Array, Axis, s};
 use num_traits::FromPrimitive;
 use ort::{
+    ep::ExecutionProviderDispatch,
     inputs,
     logging::LogLevel,
     session::{Session, SessionOutputs},
@@ -12,6 +13,33 @@ use ort::session::builder::AutoDevicePolicy;
 use strum_macros::{AsRefStr, EnumIs, EnumString};
 
 use crate::{BoundingBox, DetectedItem};
+
+macro_rules! build_execution_providers {
+    () => {{
+        #[allow(unused_mut)]
+        let mut execution_providers: Vec<ExecutionProviderDispatch> = Vec::new();
+
+        #[cfg(feature = "ep-tensorrt")]
+        execution_providers
+            .push(ort::ep::TensorRTExecutionProvider::default().build());
+
+        #[cfg(feature = "ep-cuda")]
+        execution_providers.push(ort::ep::CUDAExecutionProvider::default().build());
+
+        #[cfg(feature = "ep-coreml")]
+        execution_providers
+            .push(ort::ep::CoreMLExecutionProvider::default().build());
+
+        #[cfg(feature = "ep-directml")]
+        execution_providers
+            .push(ort::ep::DirectMLExecutionProvider::default().build());
+
+        #[cfg(feature = "ep-acl")]
+        execution_providers.push(ort::ep::ACLExecutionProvider::default().build());
+
+        execution_providers
+    }};
+}
 
 #[derive(
     Debug,
@@ -132,6 +160,8 @@ where
     }
     let mut model = Session::builder()?
         .with_log_level(LogLevel::Fatal)
+        .unwrap_or_else(|e| e.recover())
+        .with_execution_providers(build_execution_providers!())
         .unwrap_or_else(|e| e.recover())
         .with_auto_device(AutoDevicePolicy::MaxPerformance)
         .unwrap_or_else(|e| e.recover())

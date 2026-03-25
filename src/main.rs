@@ -31,7 +31,6 @@ struct Args {
     /// image compression quality (0-100)
     #[argh(option, short = 'q', default = "80")]
     quality: u8,
-
     /// image size height
     #[argh(option, short = 'h')]
     height: Option<u32>,

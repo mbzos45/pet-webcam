@@ -4,6 +4,14 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.92.0"
 
+[features]
+default = []
+ep-acl = ["ort/acl"]
+ep-coreml = ["ort/coreml"]
+ep-cuda = ["ort/cuda"]
+ep-directml = ["ort/directml"]
+ep-tensorrt = ["ort/tensorrt"]
+
 [dependencies]
 anyhow = "1.0.100"
 argh = "0.1.13"
@@ -13,9 +21,9 @@ ndarray = "0.17.0"
 nokhwa = { version = "0.10.10", features = ["input-native"] }
 num-derive = "0.4.2"
 num-traits = "0.2.19"
-ort = "=2.0.0-rc.12"
+ort = { version = "=2.0.0-rc.12", features = ["default"] }
 strum = { version = "0.27.2", features = ["derive"] }
 strum_macros = "0.27.2"
 tracing = "0.1.44"
-tracing-subscriber = "0.3.22"
+tracing-subscriber = "0.3.23"
 webp = "0.3.1"
