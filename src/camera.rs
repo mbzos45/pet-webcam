@@ -32,7 +32,7 @@ pub(crate) fn capture_image(camera_id: usize) -> Result<DynamicImage> {
     let mut camera = Camera::with_backend(cam_info.index().clone(), req_format, backend)?;
     camera.open_stream()?;
     for _ in 0..5 {
-        camera.frame()?;
+        let _ = camera.frame()?;
     }
     let frame = camera.frame()?;
     camera.stop_stream()?;

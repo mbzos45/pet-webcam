@@ -17,11 +17,11 @@ anyhow = "1.0"
 argh = "0.1"
 chrono = "0.4"
 image = { version = "0.25", default-features = false, features = ["rayon"]}
-ndarray = "0.17"
+ndarray = { version = "0.17", default-features = false}
 nokhwa = { version = "0.10", features = ["input-native"] }
 num-derive = "0.4"
 num-traits = "0.2"
-ort = { version = "=2.0.0-rc.12", features = ["default"] }
+ort = { version = "=2.0.0-rc.13", features = ["default"] }
 strum = { version = "0", features = ["derive"] }
 strum_macros = "0"
 tracing = "0.1.44"
