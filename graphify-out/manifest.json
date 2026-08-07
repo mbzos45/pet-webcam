@@ -1,0 +1,27 @@
+{
+  "src/camera.rs": {
+    "mtime": 1785899314.321,
+    "ast_hash": "934ed8f810c6c7c30d52095d07105975",
+    "semantic_hash": "934ed8f810c6c7c30d52095d07105975"
+  },
+  "src/detector.rs": {
+    "mtime": 1785898473.8304312,
+    "ast_hash": "13b2e1c9b2d77471ffed360e030b10ac",
+    "semantic_hash": "13b2e1c9b2d77471ffed360e030b10ac"
+  },
+  "src/main.rs": {
+    "mtime": 1785898767.283,
+    "ast_hash": "f152df1a3e57f7f725039db143181eca",
+    "semantic_hash": "f152df1a3e57f7f725039db143181eca"
+  },
+  "src/storage.rs": {
+    "mtime": 1785898473.8305995,
+    "ast_hash": "dbdebfb7baa19a26226e673796c54fdb",
+    "semantic_hash": "dbdebfb7baa19a26226e673796c54fdb"
+  },
+  "openspec/config.yaml": {
+    "mtime": 1786071468.3459625,
+    "ast_hash": "a88f7d80935e1a432dc9b5affe49eb27",
+    "semantic_hash": "a88f7d80935e1a432dc9b5affe49eb27"
+  }
+}

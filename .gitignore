@@ -384,3 +384,17 @@ $RECYCLE.BIN/
 
 # End of https://www.toptal.com/developers/gitignore/api/windows,macos,linux,visualstudiocode,jetbrains+all,rust,rust-analyzer,python,opencv
 /outputs/
+
+# ai agent
+/.claude/skills
+/.claude/commands
+/.claude/settings.json
+/.github/prompts
+/.github/skills
+
+#graphify-out
+!graphify-out
+graphify-out/cache
+graphify-out/.graphify_labels.json
+graphify-out/.graphify_python
+graphify-out/.graphify_root

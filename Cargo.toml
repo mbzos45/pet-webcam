@@ -24,6 +24,6 @@ num-traits = "0.2"
 ort = { version = "=2.0.0-rc.13", features = ["default"] }
 strum = { version = "0", features = ["derive"] }
 strum_macros = "0"
-tracing = "0.1.44"
+tracing = "0.1"
 tracing-subscriber = "0.3"
 webp = "0.3"
