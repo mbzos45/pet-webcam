@@ -10,18 +10,63 @@
     "semantic_hash": "13b2e1c9b2d77471ffed360e030b10ac"
   },
   "src/main.rs": {
-    "mtime": 1785898767.283,
-    "ast_hash": "f152df1a3e57f7f725039db143181eca",
-    "semantic_hash": "f152df1a3e57f7f725039db143181eca"
-  },
-  "src/storage.rs": {
-    "mtime": 1785898473.8305995,
-    "ast_hash": "dbdebfb7baa19a26226e673796c54fdb",
-    "semantic_hash": "dbdebfb7baa19a26226e673796c54fdb"
+    "mtime": 1786075178.569576,
+    "ast_hash": "5fa92ec6eeab553d98c4999bbbb9312a",
+    "semantic_hash": ""
   },
   "openspec/config.yaml": {
     "mtime": 1786071468.3459625,
     "ast_hash": "a88f7d80935e1a432dc9b5affe49eb27",
     "semantic_hash": "a88f7d80935e1a432dc9b5affe49eb27"
+  },
+  ".claude/settings.local.json": {
+    "mtime": 1786075194.5532594,
+    "ast_hash": "16478ac9433f90064af9fb28d1466441",
+    "semantic_hash": ""
+  },
+  "src/storage/mod.rs": {
+    "mtime": 1786075035.6896386,
+    "ast_hash": "2b8c4d05cf1cba4fcc95ddea78828038",
+    "semantic_hash": ""
+  },
+  "src/storage/smb.rs": {
+    "mtime": 1786083000.2010143,
+    "ast_hash": "6c313dd97f6cd8a73c08f42a2148eb70",
+    "semantic_hash": ""
+  },
+  "CLAUDE.md": {
+    "mtime": 1786072185.9197407,
+    "ast_hash": "82efb97a359f5c7290bf2513d14686be",
+    "semantic_hash": ""
+  },
+  "README.md": {
+    "mtime": 1786075342.1212296,
+    "ast_hash": "e2dbcf74325e5ed5f8299b43ff644784",
+    "semantic_hash": ""
+  },
+  "openspec/changes/add-smb-image-storage/.openspec.yaml": {
+    "mtime": 1786073972.12607,
+    "ast_hash": "29df9fc9512a6f4bd5b0de0a084a3b93",
+    "semantic_hash": ""
+  },
+  "openspec/changes/add-smb-image-storage/design.md": {
+    "mtime": 1786083296.512272,
+    "ast_hash": "14f4073c73b810a47a412b94db149dfe",
+    "semantic_hash": ""
+  },
+  "openspec/changes/add-smb-image-storage/proposal.md": {
+    "mtime": 1786083251.9281511,
+    "ast_hash": "2bf88395196f2db946aa031de31e3f40",
+    "semantic_hash": ""
+  },
+  "openspec/changes/add-smb-image-storage/specs/smb-image-storage/spec.md": {
+    "mtime": 1786074291.0507727,
+    "ast_hash": "4b747c2c9c65183e43561de701bacffc",
+    "semantic_hash": ""
+  },
+  "openspec/changes/add-smb-image-storage/tasks.md": {
+    "mtime": 1786083360.2252152,
+    "ast_hash": "4f69b47d946af464aadc78b306a875de",
+    "semantic_hash": ""
   }
 }
