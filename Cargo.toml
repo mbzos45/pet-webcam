@@ -11,6 +11,7 @@ ep-cuda = ["ort/cuda"]
 ep-directml = ["ort/directml"]
 ep-tensorrt = ["ort/tensorrt"]
 ep-xnnpack = ["ort/xnnpack"]
+ep-webgpu = ["ort/webgpu"]
 
 [dependencies]
 anyhow = "1.0"

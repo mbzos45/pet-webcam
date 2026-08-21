@@ -21,24 +21,27 @@ macro_rules! build_execution_providers {
 
         #[cfg(feature = "ep-tensorrt")]
         execution_providers
-            .push(ort::ep::TensorRTExecutionProvider::default().build());
+            .push(ort::ep::TensorRT::default().build());
 
         #[cfg(feature = "ep-cuda")]
-        execution_providers.push(ort::ep::CUDAExecutionProvider::default().build());
+        execution_providers.push(ort::ep::CUDA::default().build());
 
         #[cfg(feature = "ep-coreml")]
         execution_providers
-            .push(ort::ep::CoreMLExecutionProvider::default().build());
+            .push(ort::ep::CoreML::default().build());
 
         #[cfg(feature = "ep-directml")]
         execution_providers
-            .push(ort::ep::DirectMLExecutionProvider::default().build());
+            .push(ort::ep::DirectML::default().build());
 
         #[cfg(feature = "ep-acl")]
-        execution_providers.push(ort::ep::ACLExecutionProvider::default().build());
+        execution_providers.push(ort::ep::ACL::default().build());
 
         #[cfg(feature = "ep-xnnpack")]
-        execution_providers.push(ort::ep::XNNPACKExecutionProvider::default().build());
+        execution_providers.push(ort::ep::XNNPACK::default().build());
+        
+        #[cfg(feature = "ep-webgpu")]
+        execution_providers.push(ort::ep::WebGPU::default().build());
 
         execution_providers
     }};
