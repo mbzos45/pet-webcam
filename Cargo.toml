@@ -17,14 +17,14 @@ ep-webgpu = ["ort/webgpu"]
 anyhow = "1.0"
 argh = "0.1"
 chrono = "0.4"
-dotenvy = "0.15.7"
+dotenvy = "0.15"
 image = { version = "0.25", default-features = false, features = ["rayon"]}
 ndarray = { version = "0.17", default-features = false}
 nokhwa = { version = "0.10", features = ["input-native"] }
 num-derive = "0.4"
 num-traits = "0.2"
 ort = { version = "=2.0.0-rc.13", features = ["default"] }
-pavao = "0.2.16"
+pavao = "0.2"
 strum = { version = "0", features = ["derive"] }
 strum_macros = "0"
 tracing = "0.1"
